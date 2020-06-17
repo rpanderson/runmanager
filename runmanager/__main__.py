@@ -3515,8 +3515,38 @@ class RemoteServer(ZMQServer):
         )
         ZMQServer.__init__(self, port=port)
 
+    def handle_get_active_groups(self):
+        return inmain(app.get_active_groups, interactive=False)
+
+    def handle_get_active_globals_files(self):
+        active_groups = self.handle_get_active_groups()
+        return [Path(x) for x in set(active_groups.values())]
+
+    @inmain_decorator()
+    def handle_create_globals_file(self, filepath):
+        path = Path(filepath).resolve()
+        active_files = self.handle_get_active_globals_files()
+        if not path.exists() and path not in active_files:
+            # Create the new file and open it
+            runmanager.new_globals_file(str(filepath))
+            app.open_globals_file(str(filepath))
+            return path
+        else:
+            return None
+
+    @inmain_decorator()
+    def handle_create_globals_group(self, filepath, group):
+        path = Path(filepath).resolve()
+        active_groups = self.handle_get_active_groups()
+        active_files = self.handle_get_active_globals_files()
+        if group not in active_groups and path in active_files:
+            # TODO: implement this!
+            return {group: str(path)}
+        else:
+            return None
+
     def handle_get_globals(self, raw=False):
-        active_groups = inmain(app.get_active_groups, interactive=False)
+        active_groups = self.handle_get_active_groups()
         sequence_globals = runmanager.get_globals(active_groups)
         all_globals = {}
         if raw:
@@ -3533,7 +3563,7 @@ class RemoteServer(ZMQServer):
 
     @inmain_decorator()
     def handle_set_globals(self, globals, raw=False):
-        active_groups = app.get_active_groups(interactive=False)
+        active_groups = self.handle_get_active_groups()
         sequence_globals = runmanager.get_globals(active_groups)
         try:
             for global_name, new_value in globals.items():
@@ -3660,7 +3690,7 @@ class RemoteServer(ZMQServer):
         try:
             # This will raise an exception if there are multiple active groups of the
             # same name:
-            active_groups = inmain(app.get_active_groups, interactive=False)
+            active_groups = self.handle_get_active_groups()
             sequence_globals = runmanager.get_globals(active_groups)
             # This will raise an exception if any of the globals can't be evaluated:
             runmanager.evaluate_globals(sequence_globals, raise_exceptions=True)

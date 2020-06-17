@@ -42,6 +42,25 @@ class Client(ZMQClient):
         them first."""
         return self.request('set_globals', globals, raw=raw)
 
+    def get_active_groups(self):
+        """Returns active groups in the format {group_name: globals_file}.
+        Displays an error dialog and returns None if multiple groups of the
+        same name are selected."""
+        return self.request('get_active_groups')
+
+    def get_active_globals_files(self):
+        """Return the full path of all globals files loaded into the runmanager GUI,
+        if they are active."""
+        return self.request('get_active_globals_files')
+
+    def create_globals_file(self, filepath):
+        """Create a globals file with the specified filepath if it doesn't exist."""
+        return self.request('create_globals_file', filepath)
+
+    def create_globals_group(self, filepath, group):
+        """Create a globals group within globals file specified by filepath."""
+        return self.request('create_globals_group', filepath, group)
+
     def engage(self):
         """Trigger shot compilation/submission"""
         return self.request('engage')
@@ -106,6 +125,7 @@ class Client(ZMQClient):
         """Reset the shot output folder to the default path"""
         return self.request('reset_shot_output_folder')
 
+
 _default_client = Client()
 
 say_hello = _default_client.say_hello
@@ -114,6 +134,10 @@ get_globals = _default_client.get_globals
 # get_globals_full = _default_client.get_globals_full
 set_globals = _default_client.set_globals
 # set_globals_full = _default_client.set_globals_full
+get_active_groups = _default_client.get_active_groups
+get_active_globals_files = _default_client.get_active_globals_files
+create_globals_file = _default_client.create_globals_file
+create_globals_group = _default_client.create_globals_group
 engage = _default_client.engage
 abort = _default_client.abort
 get_run_shots = _default_client.get_run_shots
